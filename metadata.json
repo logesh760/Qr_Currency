@@ -1,0 +1,6 @@
+{
+  "name": "QR Currency",
+  "description": "A secure QR-based digital wallet simulation featuring offline transaction support, balance management, and spending insights.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": []
+}
