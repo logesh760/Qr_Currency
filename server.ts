@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT || 3000;
 
   app.use(express.json());
 
@@ -26,9 +26,18 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
+    const indexPath = path.join(distPath, 'index.html');
+    
+    // Serve static files if dist exists
     app.use(express.static(distPath));
+    
     app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+      // Check if dist/index.html exists before attempting to send it
+      res.sendFile(indexPath, (err) => {
+        if (err) {
+          res.status(404).send('Backend is running. Frontend not found in dist/. If this is a separate backend, use /api routes.');
+        }
+      });
     });
   }
 
