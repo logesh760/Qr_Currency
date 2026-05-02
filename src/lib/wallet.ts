@@ -1,5 +1,4 @@
 import { supabase } from './supabase';
-import { auth } from './firebase';
 
 export enum OperationType {
   CREATE = 'create',
@@ -10,12 +9,13 @@ export enum OperationType {
   WRITE = 'write',
 }
 
-export function handleSupabaseError(error: any, operationType: OperationType, path: string | null) {
+export async function handleSupabaseError(error: any, operationType: OperationType, path: string | null) {
+  const { data: { user } } = await supabase.auth.getUser();
   const errInfo = {
     error: error.message || String(error),
     authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
+      userId: user?.id,
+      email: user?.email,
     },
     operationType,
     path
@@ -25,8 +25,9 @@ export function handleSupabaseError(error: any, operationType: OperationType, pa
 }
 
 export async function claimQR(qrId: string) {
-  if (!auth.currentUser) throw new Error("Authentication required");
-  const receiverId = auth.currentUser.uid;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Authentication required");
+  const receiverId = user.id;
 
   try {
     // 1. Get QR Info
@@ -88,8 +89,9 @@ export async function claimQR(qrId: string) {
 }
 
 export async function generatePaymentQR(amount: number) {
-  if (!auth.currentUser) throw new Error("Authentication required");
-  const senderId = auth.currentUser.uid;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Authentication required");
+  const senderId = user.id;
 
   const { data: wallet } = await supabase
     .from('wallets')
@@ -116,8 +118,9 @@ export async function generatePaymentQR(amount: number) {
 }
 
 export async function createToken(amount: number) {
-  if (!auth.currentUser) throw new Error("Authentication required");
-  const userId = auth.currentUser.uid;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Authentication required");
+  const userId = user.id;
 
   const { data: wallet } = await supabase
     .from('wallets')
@@ -140,8 +143,9 @@ export async function createToken(amount: number) {
 }
 
 export async function transferToken(tokenId: string) {
-  if (!auth.currentUser) throw new Error("Authentication required");
-  const receiverId = auth.currentUser.uid;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Authentication required");
+  const receiverId = user.id;
 
   const { data: token } = await supabase.from('tokens').select('*').eq('id', tokenId).single();
   if (!token || token.is_spent) throw new Error("Token invalid or spent");
@@ -157,8 +161,9 @@ export async function transferToken(tokenId: string) {
 
 // Logic for initial wallet creation if missing
 export async function initializeWallet() {
-  if (!auth.currentUser) return;
-  const userId = auth.currentUser.uid;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  const userId = user.id;
   
   const { data } = await supabase.from('wallets').select('*').eq('user_id', userId).single();
   if (!data) {
@@ -167,8 +172,9 @@ export async function initializeWallet() {
 }
 
 export async function splitWallet(amount: number) {
-  if (!auth.currentUser) throw new Error("Authentication required");
-  const uid = auth.currentUser.uid;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Authentication required");
+  const uid = user.id;
 
   const { data: wallet } = await supabase.from('wallets').select('balance').eq('user_id', uid).single();
   if (!wallet || wallet.balance < amount) throw new Error("Insufficient balance");

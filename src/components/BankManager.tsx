@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { auth } from '../lib/firebase';
 import { createBankAccount, depositToBank, transferBankToWallet, transferWalletToBank } from '../lib/bank';
 import { motion, AnimatePresence } from 'motion/react';
 import { Landmark, ArrowRightLeft, Plus, History, Loader2, Building2, CreditCard, Wallet } from 'lucide-react';
+import { User } from '@supabase/supabase-js';
 
 interface BankAccount {
   user_id: string;
@@ -22,7 +22,11 @@ interface BankTransaction {
   created_at: string;
 }
 
-export function BankManager() {
+interface BankManagerProps {
+  user: User;
+}
+
+export function BankManager({ user }: BankManagerProps) {
   const [account, setAccount] = useState<BankAccount | null>(null);
   const [transactions, setTransactions] = useState<BankTransaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,8 +35,7 @@ export function BankManager() {
   const [mode, setMode] = useState<'view' | 'deposit' | 'transfer_to_wallet' | 'transfer_from_wallet'>('view');
 
   useEffect(() => {
-    if (!auth.currentUser) return;
-    const userId = auth.currentUser.uid;
+    const userId = user.id;
 
     const fetchData = async () => {
       const { data: acc } = await supabase.from('bank_accounts').select('*').eq('user_id', userId).single();
@@ -80,7 +83,7 @@ export function BankManager() {
       accountSub.unsubscribe();
       txSub.unsubscribe();
     };
-  }, []);
+  }, [user.id]);
 
   const handleCreateAccount = async () => {
     setActionLoading(true);

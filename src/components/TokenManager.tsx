@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { auth } from '../lib/firebase';
 import { createToken } from '../lib/wallet';
 import { QRCodeSVG } from 'qrcode.react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Coins, Plus, X, ArrowRight, Loader2, Info } from 'lucide-react';
+import { User } from '@supabase/supabase-js';
 
-export function TokenManager() {
+interface TokenManagerProps {
+  user: User;
+}
+
+export function TokenManager({ user }: TokenManagerProps) {
   const [tokens, setTokens] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [minting, setMinting] = useState(false);
@@ -14,8 +18,7 @@ export function TokenManager() {
   const [selectedToken, setSelectedToken] = useState<any | null>(null);
 
   useEffect(() => {
-    if (!auth.currentUser) return;
-    const userId = auth.currentUser.uid;
+    const userId = user.id;
 
     const fetchTokens = async () => {
       const { data } = await supabase
@@ -49,7 +52,7 @@ export function TokenManager() {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [user.id]);
 
 
   const handleMint = async () => {

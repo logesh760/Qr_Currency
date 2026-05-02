@@ -1,10 +1,10 @@
 import { supabase } from './supabase';
-import { auth } from './firebase';
 import { handleSupabaseError, OperationType } from './wallet';
 
 export async function createBankAccount() {
-  if (!auth.currentUser) throw new Error("Unauthenticated");
-  const userId = auth.currentUser.uid;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthenticated");
+  const userId = user.id;
 
   const { data: existing } = await supabase.from('bank_accounts').select('*').eq('user_id', userId).single();
   if (existing) return existing;
@@ -22,8 +22,9 @@ export async function createBankAccount() {
 }
 
 export async function depositToBank(amount: number) {
-  if (!auth.currentUser) throw new Error("Unauthenticated");
-  const userId = auth.currentUser.uid;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthenticated");
+  const userId = user.id;
 
   const { data: acc } = await supabase.from('bank_accounts').select('balance').eq('user_id', userId).single();
   if (!acc) throw new Error("Account not found");
@@ -41,8 +42,9 @@ export async function depositToBank(amount: number) {
 }
 
 export async function transferBankToWallet(amount: number) {
-  if (!auth.currentUser) throw new Error("Unauthenticated");
-  const userId = auth.currentUser.uid;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthenticated");
+  const userId = user.id;
 
   const { data: bank } = await supabase.from('bank_accounts').select('balance').eq('user_id', userId).single();
   const { data: wallet } = await supabase.from('wallets').select('balance').eq('user_id', userId).single();
@@ -64,8 +66,9 @@ export async function transferBankToWallet(amount: number) {
 }
 
 export async function transferWalletToBank(amount: number) {
-  if (!auth.currentUser) throw new Error("Unauthenticated");
-  const userId = auth.currentUser.uid;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthenticated");
+  const userId = user.id;
 
   const { data: bank } = await supabase.from('bank_accounts').select('balance').eq('user_id', userId).single();
   const { data: wallet } = await supabase.from('wallets').select('balance').eq('user_id', userId).single();

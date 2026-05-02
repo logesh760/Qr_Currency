@@ -1,5 +1,5 @@
 import React from 'react';
-import { User as FirebaseUser } from 'firebase/auth';
+import { User } from '@supabase/supabase-js';
 import { ArrowUpRight, ArrowDownLeft, Wallet, Plus, Scissors, Info } from 'lucide-react';
 import { motion } from 'motion/react';
 import { splitWallet } from '../lib/wallet';
@@ -8,7 +8,7 @@ import { supabase } from '../lib/supabase';
 
 interface DashboardProps {
   balance: number | null;
-  user: FirebaseUser;
+  user: User;
   setView: (view: any) => void;
 }
 
@@ -21,7 +21,7 @@ export function Dashboard({ balance, user, setView }: DashboardProps) {
       const { data } = await supabase
         .from('transactions')
         .select('*')
-        .or(`sender_id.eq.${user.uid},receiver_id.eq.${user.uid}`)
+        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
         .order('created_at', { ascending: false })
         .limit(5);
       
@@ -36,7 +36,7 @@ export function Dashboard({ balance, user, setView }: DashboardProps) {
         event: 'INSERT', 
         schema: 'public', 
         table: 'transactions',
-        filter: `sender_id=eq.${user.uid},receiver_id=eq.${user.uid}` 
+        filter: `sender_id=eq.${user.id},receiver_id=eq.${user.id}` 
       }, (payload) => {
         setTransactions(prev => [payload.new, ...prev].slice(0, 5));
       })
@@ -45,7 +45,7 @@ export function Dashboard({ balance, user, setView }: DashboardProps) {
     return () => {
       subscription.unsubscribe();
     };
-  }, [user.uid]);
+  }, [user.id]);
 
 
   const handleSplit = async () => {
@@ -85,7 +85,7 @@ export function Dashboard({ balance, user, setView }: DashboardProps) {
             <span className="text-2xl text-[#00FF00] font-mono font-bold">QR</span>
           </div>
           <div className="text-gray-500 text-sm font-mono truncate max-w-[200px]">
-            Wallet ID: {user.uid.slice(0, 16)}...
+            Wallet ID: {user.id.slice(0, 16)}...
           </div>
         </div>
 

@@ -1,6 +1,4 @@
 import { useState, useEffect } from 'react';
-import { auth, googleProvider } from './lib/firebase';
-import { signInWithPopup, onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { supabase } from './lib/supabase';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
@@ -10,9 +8,10 @@ import { TransactionHistory } from './components/TransactionHistory';
 import { TokenManager } from './components/TokenManager';
 import { BankManager } from './components/BankManager';
 import { motion, AnimatePresence } from 'motion/react';
-import { QrCode, Wallet, Activity, LogIn, Loader2, Wifi, WifiOff, RefreshCcw } from 'lucide-react';
+import { QrCode, LogIn, Loader2, WifiOff } from 'lucide-react';
 import { getOfflineIntents, removeOfflineIntent } from './lib/offlineStore';
 import { claimQR, transferToken, initializeWallet } from './lib/wallet';
+import { User } from '@supabase/supabase-js';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -53,66 +52,90 @@ export default function App() {
   };
 
   useEffect(() => {
-    const unsubAuth = onAuthStateChanged(auth, async (u) => {
-      setUser(u);
-      if (u) {
-        if (!supabase) {
-          setLoading(false);
-          return;
-        }
+    // Check initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        initData(session.user.id);
+      } else {
+        setLoading(false);
+      }
+    });
 
-        try {
-          await initializeWallet();
-          
-          // Initial balance fetch
-          const { data: walletData } = await supabase
-            .from('wallets')
-            .select('balance')
-            .eq('user_id', u.uid)
-            .single();
-          
-          if (walletData) setBalance(walletData.balance);
-
-          // Realtime balance listener
-          const subscription = supabase
-            .channel('wallet_changes')
-            .on('postgres_changes', { 
-              event: 'UPDATE', 
-              schema: 'public', 
-              table: 'wallets', 
-              filter: `user_id=eq.${u.uid}` 
-            }, (payload) => {
-              setBalance(payload.new.balance);
-            })
-            .subscribe();
-
-          setLoading(false);
-          return () => {
-            subscription.unsubscribe();
-          };
-        } catch (err) {
-          console.error("Initialization error:", err);
-          setLoading(false);
-        }
+    const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      
+      if (currentUser) {
+        initData(currentUser.id);
       } else {
         setBalance(null);
         setLoading(false);
       }
     });
 
-    return () => unsubAuth();
+    return () => {
+      authListener.unsubscribe();
+    };
   }, []);
+
+  const initData = async (userId: string) => {
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      await initializeWallet();
+      
+      // Initial balance fetch
+      const { data: walletData } = await supabase
+        .from('wallets')
+        .select('balance')
+        .eq('user_id', userId)
+        .single();
+      
+      if (walletData) setBalance(walletData.balance);
+
+      // Realtime balance listener
+      const subscription = supabase
+        .channel('wallet_changes')
+        .on('postgres_changes', { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'wallets', 
+          filter: `user_id=eq.${userId}` 
+        }, (payload) => {
+          setBalance(payload.new.balance);
+        })
+        .subscribe();
+
+      setLoading(false);
+      return () => {
+        subscription.unsubscribe();
+      };
+    } catch (err) {
+      console.error("Initialization error:", err);
+      setLoading(false);
+    }
+  };
 
 
   const handleLogin = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      if (error) throw error;
     } catch (err) {
       console.error(err);
     }
   };
 
-  const handleLogout = () => signOut(auth);
+  const handleLogout = () => supabase.auth.signOut();
 
   if (loading) {
     return (
@@ -232,7 +255,7 @@ export default function App() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
           >
-            <TransactionHistory userId={user.uid} />
+            <TransactionHistory userId={user.id} />
           </motion.div>
         )}
         {view === 'tokens' && (
@@ -242,7 +265,7 @@ export default function App() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
           >
-            <TokenManager />
+            <TokenManager user={user} />
           </motion.div>
         )}
         {view === 'bank' && (
@@ -252,7 +275,7 @@ export default function App() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
           >
-            <BankManager />
+            <BankManager user={user} />
           </motion.div>
         )}
       </AnimatePresence>

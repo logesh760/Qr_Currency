@@ -1,5 +1,5 @@
 import React from 'react';
-import { User as FirebaseUser } from 'firebase/auth';
+import { User } from '@supabase/supabase-js';
 import { QrCode, Wallet, Activity, LogOut, ScanLine, WifiOff, RefreshCcw, Coins, Building2 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -8,7 +8,7 @@ interface LayoutProps {
   activeView: 'dashboard' | 'generate' | 'scan' | 'history' | 'tokens' | 'bank';
   setView: (view: 'dashboard' | 'generate' | 'scan' | 'history' | 'tokens' | 'bank') => void;
   onLogout: () => void;
-  user: FirebaseUser;
+  user: User;
   isOnline: boolean;
   syncing: boolean;
   pendingSyncCount: number;
@@ -26,6 +26,8 @@ export function Layout({
   pendingSyncCount,
   onSync
 }: LayoutProps) {
+  const avatarUrl = user.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`;
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col font-sans">
       {/* Header */}
@@ -44,7 +46,7 @@ export function Layout({
             </button>
           )}
           <img 
-            src={user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`} 
+            src={avatarUrl} 
             alt="Profile" 
             className="w-8 h-8 rounded-full border border-white/20"
           />
