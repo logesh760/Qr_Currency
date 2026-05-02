@@ -84,7 +84,7 @@ export async function claimQR(qrId: string) {
 
     return { amount, senderId };
   } catch (error) {
-    handleSupabaseError(error, OperationType.WRITE, `qr_codes/${qrId}`);
+    await handleSupabaseError(error, OperationType.WRITE, `qr_codes/${qrId}`);
   }
 }
 
@@ -113,7 +113,7 @@ export async function generatePaymentQR(amount: number) {
     .select()
     .single();
 
-  if (error) handleSupabaseError(error, OperationType.WRITE, 'qr_codes');
+  if (error) await handleSupabaseError(error, OperationType.WRITE, 'qr_codes');
   return data.id;
 }
 
@@ -139,7 +139,7 @@ export async function createToken(amount: number) {
     is_spent: false
   });
 
-  if (error) handleSupabaseError(error, OperationType.WRITE, 'tokens');
+  if (error) await handleSupabaseError(error, OperationType.WRITE, 'tokens');
 }
 
 export async function transferToken(tokenId: string) {
@@ -155,7 +155,7 @@ export async function transferToken(tokenId: string) {
     updated_at: new Date().toISOString()
   }).eq('id', tokenId);
 
-  if (error) handleSupabaseError(error, OperationType.WRITE, 'tokens');
+  if (error) await handleSupabaseError(error, OperationType.WRITE, 'tokens');
   return { amount: token.amount, senderId: token.owner_id };
 }
 

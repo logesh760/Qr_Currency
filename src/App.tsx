@@ -123,15 +123,13 @@ export default function App() {
 
   const handleLogin = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin
-        }
-      });
+      if (!supabase) return;
+      const { error } = await supabase.auth.signInAnonymously();
       if (error) throw error;
     } catch (err) {
       console.error(err);
+      // Fallback if anonymous is disabled: Just simulate success visually or show error
+      alert("Guest access failed. Please ensure Anonymous Auth is enabled in Supabase.");
     }
   };
 
@@ -162,10 +160,10 @@ export default function App() {
           </p>
           <button 
             onClick={handleLogin}
-            className="w-full py-4 bg-white text-black font-bold rounded-xl flex items-center justify-center gap-3 hover:bg-[#00FF00] transition-colors"
+            className="w-full py-4 bg-[#00FF00] text-black font-bold rounded-xl flex items-center justify-center gap-3 hover:bg-[#00cc00] transition-colors"
           >
             <LogIn className="w-5 h-5" />
-            Sign in with Google
+            Enter Wallet
           </button>
           <p className="text-xs text-gray-500 uppercase tracking-widest font-mono">
             This is a simulation wallet (Not real money)

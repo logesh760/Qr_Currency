@@ -17,7 +17,7 @@ export async function createBankAccount() {
     balance: 0
   }).select().single();
 
-  if (error) handleSupabaseError(error, OperationType.WRITE, 'bank_accounts');
+  if (error) await handleSupabaseError(error, OperationType.WRITE, 'bank_accounts');
   return data;
 }
 
