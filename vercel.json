@@ -4,7 +4,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://your-render-app-url.onrender.com/api/$1"
+      "destination": "https://qr-currency-cn4n.onrender.com/api/$1"
     },
     {
       "source": "/(.*)",
